@@ -1,0 +1,132 @@
+#!/bin/sh
+# Super Package Manager v2.1 - ChromeOS + Ruby recipes
+# Supports: .tar.zst/.gz/.xz + curl fetch + Chromebrew recipes
+
+PREFIX="/mnt/stateful_partition/spm"
+BINDIR="$PREFIX/bin"
+PKGDIR="$PREFIX/pkgs" 
+DBDIR="$PREFIX/db"
+STATUSFILE="$DBDIR/status.json"
+CREW_RECIPES="$PREFIX/crew-recipes"
+
+init_spm() {
+  mkdir -p "$BINDIR" "$PKGDIR" "$DBDIR" "$CREW_RECIPES"
+  [ ! -f "$STATUSFILE" ] && echo "[]" > "$STATUSFILE"
+}
+
+# Install ANY archive format
+install() {
+  PKGFILE="$1"
+  [ ! -f "$PKGFILE" ] && { echo "Error: $PKGFILE not found"; return 1; }
+  
+  # Detect format + extract
+  case "$PKGFILE" in
+    *.zst) tar -I zstd -xf "$PKGFILE" -C "$PKGDIR" ;;
+    *.gz|*.tgz) tar -xzf "$PKGFILE" -C "$PKGDIR" ;;
+    *.xz) tar -xJf "$PKGFILE" -C "$PKGDIR" ;;
+    *.tar) tar -xf "$PKGFILE" -C "$PKGDIR" ;;
+    *) echo "Unsupported: $PKGFILE (needs .tar.zst/.gz/.xz)"; return 1 ;;
+  esac
+  
+  # Read manifest
+  MANIFEST="$PKGDIR/manifest.json"
+  [ ! -f "$MANIFEST" ] && { echo "No manifest.json"; return 1; }
+  
+  NAME=$(sed -n 's/.*"name":"\([^"]*\)".*/\1/p' "$MANIFEST" | head -1)
+  VER=$(sed -n 's/.*"version":"\([^"]*\)".*/\1/p' "$MANIFEST" | head -1)
+  [ -z "$NAME" ] && NAME=$(basename "$PKGFILE" .tar.zst)
+  
+  # Install files to /usr/local (flexible paths)
+  if [ -f "$PKGDIR/files.tar" ]; then
+    sudo tar -xf "$PKGDIR/files.tar" -C /usr/local 2>/dev/null
+  elif [ -d "$PKGDIR/files" ]; then
+    sudo cp -rf "$PKGDIR/files/"* /usr/local/ 2>/dev/null
+  else
+    sudo cp -rf "$PKGDIR/"* /usr/local/ 2>/dev/null
+  fi
+  
+  # Update DB
+  if command -v jq >/dev/null 2>&1; then
+    jq --arg n "$NAME" --arg v "$VER" '. += [{"name":$n,"version":$v}]' "$STATUSFILE" > /tmp/status.json && \
+    mv /tmp/status.json "$STATUSFILE"
+  else
+    echo "{\"name\":\"$NAME\",\"version\":\"$VER\"}" >> "$STATUSFILE"
+  fi
+  
+  echo "✓ $NAME $VER → /usr/local/"
+}
+
+# Curl fetch + auto-install
+fetch() {
+  URL="$1"
+  NAME="$2"
+  [ -z "$NAME" ] && NAME=$(basename "$URL" | sed 's/\.[^.]*$//')
+  TMPFILE="/mnt/stateful_partition/spm/fetch/${NAME}.$(echo "$URL" | sed 's/.*\.//')"
+  
+  echo "Fetching $URL → $TMPFILE"
+  curl -L "$URL" -o "$TMPFILE" || { echo "Download failed"; return 1; }
+  install "$TMPFILE" && rm -f "$TMPFILE"
+}
+
+# Chromebrew recipe fetch/display
+recipe() {
+  PKG="$1"
+  [ -z "$PKG" ] && { echo "Usage: spm recipe <name>"; return 1; }
+  
+  curl -s "https://raw.githubusercontent.com/chromebrew/chromebrew/master/packages/${PKG}/${PKG}.rb" > /mnt/stateful_partition/spm/ruby/tmp/${PKG}.rb
+  if [ $? -eq 0 ]; then
+    echo "✓ ${PKG}.rb recipe downloaded to /tmp/${PKG}.rb"
+    echo "URL: $(grep -i 'url ' /tmp/${PKG}.rb | head -1)"
+    echo "Version: $(grep -i 'version ' /tmp/${PKG}.rb | head -1)"
+    echo "Run: ruby /mnt/stateful_partition/spm/ruby/tmp/${PKG}.rb to execute"
+  else
+    echo "Recipe not found: $PKG"
+  fi
+}
+
+# List packages + recipes
+list() {
+  echo "=== Installed ==="
+  if [ -f "$STATUSFILE" ] && command -v jq >/dev/null 2>&1; then
+    jq -r '.[] | "\(.name) (\(.version))"' "$STATUSFILE" 2>/dev/null || echo "No packages"
+  else
+    grep -o '"name":"[^"]*"' "$STATUSFILE" 2>&1 | sed 's/"name":"//g' || echo "No packages"
+  fi
+  echo ""
+  echo "=== Available Chromebrew recipes ==="
+  curl -s "https://api.github.com/repos/chromebrew/chromebrew/contents/packages" | \
+    grep '"name"' | cut -d'"' -f4 | head -20 | nl
+}
+
+# Remove package tracking
+remove() {
+  PKG="$1"
+  [ -z "$PKG" ] && { echo "Usage: spm remove <name>"; return 1; }
+  grep -v "\"name\":\"${PKG}\"" "$STATUSFILE" > /tmp/status.tmp 2>/dev/null && \
+  mv /tmp/status.tmp "$STATUSFILE"
+  echo "✓ $PKG removed from tracking"
+}
+
+case "$1" in
+  install)
+    init_spm; install "$2" ;;
+  fetch)
+    init_spm; fetch "$2" "$3" ;;
+  recipe)
+    recipe "$2" ;;
+  list|ls)
+    list ;;
+  remove|rm)
+    remove "$2" ;;
+  help|--help|-h)
+    echo "spm install <file.tar.zst|gz|xz>    # Any archive"
+    echo "spm fetch <url> [name]             # Curl + install"  
+    echo "spm recipe htop                    # Chromebrew recipe"
+    echo "spm list                           # Installed + recipes"
+    echo "spm remove <name>                  # Remove tracking"
+    ;;
+  *)
+    echo "Usage: spm {install|fetch|recipe|list|remove|help}"
+    exit 1
+    ;;
+esac
