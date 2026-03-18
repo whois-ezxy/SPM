@@ -31,7 +31,7 @@ SPM_URL="https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/${BRANCH}/b
 echo "[SPM] Downloading spm from:"
 echo "      $SPM_URL"
 
-curl -fsSL "$SPM_URL" | sudo tee "$SPM_BIN" >/dev/null
+curl -fsSL -O "$SPM_URL" | sudo tee "$SPM_BIN" >/dev/null
 sudo chmod +x "$SPM_BIN"
 
 echo "[SPM] Installed /usr/local/bin/spm"
