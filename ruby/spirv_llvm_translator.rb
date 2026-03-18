@@ -1,0 +1,26 @@
+require 'buildsystems/cmake'
+
+class Spirv_llvm_translator < CMake
+  description 'Tool and a library for bi-directional translation between SPIR-V and LLVM IR'
+  homepage 'https://github.com/KhronosGroup/SPIRV-LLVM-Translator'
+  version '21.1.3'
+  license 'Apache-2.0 WITH LLVM-exception'
+  compatibility 'all'
+  source_url 'https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git'
+  git_hashtag "v#{version.split('-').first}"
+  binary_compression 'tar.zst'
+
+  binary_sha256({
+    aarch64: '4a09e499e3676f1d8921b9cbc634f611968fbd4f625d2c465c3c8b9049566778',
+     armv7l: '4a09e499e3676f1d8921b9cbc634f611968fbd4f625d2c465c3c8b9049566778',
+       i686: 'ad64676a765230fa9102de8a782e3bbefff17614458437b32db4d0036382da75',
+     x86_64: '2ebc68aeec4a1a4a733bccca74de516b23699dd7be9ef7efb6ed4d2363e569a0'
+  })
+
+  depends_on 'gcc_lib' # R
+  depends_on 'glibc' # R
+  depends_on 'llvm_dev' => :build
+  depends_on 'llvm_lib' # R
+
+  cmake_options '-DBUILD_SHARED_LIBS=ON'
+end

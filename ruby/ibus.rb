@@ -1,0 +1,86 @@
+require 'buildsystems/autotools'
+
+class Ibus < Autotools
+  description 'Next Generation Input Bus for Linux'
+  homepage 'https://github.com/ibus/ibus/wiki'
+  version '1.5.30'
+  license 'LGPL-2.1'
+  compatibility 'aarch64 armv7l x86_64'
+  source_url 'https://github.com/ibus/ibus.git'
+  git_hashtag version
+  binary_compression 'tar.zst'
+
+  binary_sha256({
+    aarch64: 'f6ff0b2ddfdb2745f81392bebb0e8c17ed4cd2125fe9de5a6a7cdbcc3896fa2f',
+     armv7l: 'f6ff0b2ddfdb2745f81392bebb0e8c17ed4cd2125fe9de5a6a7cdbcc3896fa2f',
+     x86_64: '61e86129203821d91959f3b01f4b0020efea0e4f8d542755bf0317b6469f66d9'
+  })
+
+  depends_on 'at_spi2_core' # R
+  depends_on 'cairo' # R
+  depends_on 'dbus' # R
+  depends_on 'dconf' # R
+  depends_on 'fontconfig' => :build
+  depends_on 'freetype' => :build
+  depends_on 'gdk_pixbuf' # R
+  depends_on 'glibc' # R
+  depends_on 'glib' # R
+  depends_on 'gnome_common' => :build
+  depends_on 'gobject_introspection' => :build
+  depends_on 'graphene' # R
+  depends_on 'gtk3' # R
+  depends_on 'gtk4' # R
+  depends_on 'gtk_doc' => :build
+  depends_on 'harfbuzz' # R
+  depends_on 'hicolor_icon_theme' => :build
+  depends_on 'iso_codes' => :build
+  depends_on 'libbsd' # R
+  depends_on 'libdbusmenu_gtk3' # R
+  depends_on 'libnotify' # R
+  depends_on 'libx11' # R
+  depends_on 'libxau' # R
+  depends_on 'libxcb' # R
+  depends_on 'libxdmcp' # R
+  depends_on 'libxext' # R
+  depends_on 'libxfixes' # R
+  depends_on 'libxi' # R
+  depends_on 'libxkbcommon' # R
+  depends_on 'pango' # R
+  depends_on 'py3_pygobject' => :build
+  depends_on 'qt5_base' => :build
+  depends_on 'unicode_cldr' => :build
+  depends_on 'unicode_emoji' => :build
+  depends_on 'vala' => :build
+  depends_on 'vulkan_headers' => :build
+  depends_on 'vulkan_icd_loader' # R
+  depends_on 'wayland' # R
+  depends_on 'zlib' # R
+
+  def self.patch
+    system "sed -i 's|/usr/bin/python|#{CREW_PREFIX}/bin/python3|' engine/gensimple.py"
+    system "sed -i 's|/usr/bin/python|#{CREW_PREFIX}/bin/python3|' engine/iso639converter.py"
+    system "sed -i 's|\$(libibus) \$(libibus_emoji_dialog)|\$(libibus_emoji_dialog) \$(libibus)|' ui/gtk3/Makefile.am"
+  end
+
+  def self.prebuild
+    unless File.exist?('engine/denylist.txt')
+      downloader "https://github.com/ibus/ibus/raw/#{version}/engine/denylist.txt",
+                 '8589b87200d2e7dbf8a413129270d678e83b727bb5b7f8607e62cb9e40d2fdf1'
+    end
+  end
+
+  autotools_configure_options "--libexecdir=#{CREW_LIB_PREFIX}/ibus \
+    --sysconfdir=#{CREW_PREFIX}/etc \
+    --disable-gtk2 \
+    --disable-memconf \
+    --disable-python2 \
+    --disable-systemd-services \
+    --enable-dconf \
+    --enable-gtk4 \
+    --enable-ui \
+    --enable-wayland \
+    --with-unicode-emoji-dir=#{CREW_PREFIX}/share/unicode/emoji \
+    --with-emoji-annotation-dir=#{CREW_PREFIX}/share/unicode/cldr/common/annotations \
+    --with-python=python3 \
+    --with-ucd-dir=#{CREW_PREFIX}/share/unicode"
+end

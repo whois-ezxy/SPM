@@ -1,0 +1,44 @@
+require 'package'
+
+class Fltk < Package
+  description 'Fast Light Toolkit or FLTK (pronounced "fulltick") is a cross-platform C++ GUI toolkit'
+  homepage 'https://www.fltk.org/'
+  version '1.3.9'
+  license 'FLTK and LGPL-2'
+  compatibility 'aarch64 armv7l x86_64'
+  source_url 'https://www.fltk.org/pub/fltk/1.3.9/fltk-1.3.9-source.tar.bz2'
+  source_sha256 '103441134915402808fd45424d4061778609437e804334434e946cfd26b196c2'
+  binary_compression 'tar.zst'
+
+  binary_sha256({
+    aarch64: 'dba8dab43b88e317c70b674d84cf787ed56f5e7ff81e66b51056be549a85bcec',
+     armv7l: 'dba8dab43b88e317c70b674d84cf787ed56f5e7ff81e66b51056be549a85bcec',
+     x86_64: '3f46ea64f96026a3b8c62f4ea8951a69365c7c2340e9d3c64885978980946159'
+  })
+
+  depends_on 'gcc_lib' # R
+  depends_on 'libglvnd' # R
+  depends_on 'libice' # R
+  depends_on 'libpng' # R
+  depends_on 'libsm' # R
+  depends_on 'libx11' # R
+  depends_on 'libxcursor' # R
+  depends_on 'libxext' # R
+  depends_on 'libxfixes' # R
+  depends_on 'libxrender' # R
+  depends_on 'sommelier' => :logical
+  depends_on 'zlib' # R
+
+  def self.build
+    system "cmake -B builddir \
+      #{CREW_CMAKE_OPTIONS} \
+      -DOPTION_BUILD_EXAMPLES=OFF \
+      -DOPTION_BUILD_SHARED_LIBS=ON \
+      -G Ninja"
+    system "#{CREW_NINJA} -C builddir"
+  end
+
+  def self.install
+    system "DESTDIR=#{CREW_DEST_DIR} #{CREW_NINJA} -C builddir install"
+  end
+end

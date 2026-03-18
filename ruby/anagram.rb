@@ -1,0 +1,44 @@
+require 'package'
+
+class Anagram < Package
+  description 'finds anagrams or permutations of words in the target phrase'
+  homepage 'https://www.fourmilab.ch/anagram/'
+  version '1.5'
+  license 'CC0-1.0'
+  compatibility 'all'
+  source_url 'https://github.com/Fourmilab/anagram.git'
+  git_hashtag '5466ccd28c1b8f46bd8af420d17801bdf1da51a8'
+  binary_compression 'tar.zst'
+
+  binary_sha256({
+    aarch64: '60eb2350a7133d51a49e92ff958136e1b9dc81c4dd8ef7b75df3f0bd4907dcf0',
+     armv7l: '60eb2350a7133d51a49e92ff958136e1b9dc81c4dd8ef7b75df3f0bd4907dcf0',
+       i686: 'e9079eddb55e0f0c9a660c761394355ef5b8d755bdd457ca2c591388a0e8f10a',
+     x86_64: '5e02d9bf17529e1db392e014b193f528b3c2fd990e758be3f023478b56ac9975'
+  })
+
+  depends_on 'gcc_lib' # R
+  depends_on 'glibc' # R
+
+  def self.build
+    system "./configure #{CREW_CONFIGURE_OPTIONS}"
+    system 'make'
+
+    @_anagram_wrapper = <<~ANAGRAM_WRAPPER_EOF
+      #!/bin/bash -e
+
+      exec #{CREW_PREFIX}/share/anagram/bin/anagram \
+        --dictionary #{CREW_PREFIX}/share/anagram/crossword.txt \
+        --bindict #{CREW_PREFIX}/share/anagram/wordlist.bin "${@}"
+    ANAGRAM_WRAPPER_EOF
+    File.write 'anagram_wrapper', @_anagram_wrapper, perm: 0o755
+  end
+
+  def self.install
+    FileUtils.install 'anagram', "#{CREW_DEST_PREFIX}/share/anagram/bin", mode: 0o755
+    FileUtils.install 'anagram_wrapper', "#{CREW_DEST_PREFIX}/bin/anagram", mode: 0o755
+    FileUtils.install 'anagram.1', "#{CREW_DEST_MAN_PREFIX}/man1/anagram.1", mode: 0o644
+    FileUtils.install 'crossword.txt', "#{CREW_DEST_PREFIX}/share/anagram", mode: 0o644
+    FileUtils.install 'wordlist.bin', "#{CREW_DEST_PREFIX}/share/anagram", mode: 0o644
+  end
+end

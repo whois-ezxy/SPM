@@ -1,0 +1,36 @@
+require 'package'
+
+class Libwapcaplet < Package
+  description 'String internment library, written in C'
+  homepage 'https://www.netsurf-browser.org'
+  version '0.4.3'
+  license 'MIT'
+  compatibility 'all'
+  source_url "https://download.netsurf-browser.org/libs/releases/libwapcaplet-#{version}-src.tar.gz"
+  source_sha256 '9b2aa1dd6d6645f8e992b3697fdbd87f0c0e1da5721fa54ed29b484d13160c5c'
+  binary_compression 'tar.xz'
+
+  binary_sha256({
+    aarch64: '47d15b3284af74ebadf763f6640f440461e096b070bb5f8e3c69cc3ffda03763',
+     armv7l: '47d15b3284af74ebadf763f6640f440461e096b070bb5f8e3c69cc3ffda03763',
+       i686: '3b621c7937f5b69a7875d611ec6cd441c65764432af794d9b8c942b5c250c07a',
+     x86_64: '44bd2c72b15c9d059b51b4dc598fd5b9044b12a10ca55b0dfc561b1d71e36073'
+  })
+
+  depends_on 'netsurf_buildsystem' => :build
+
+  @env = {
+    'PREFIX' => CREW_PREFIX,
+    'LIBDIR' => "lib#{CREW_LIB_SUFFIX}",
+    'DESTDIR' => CREW_DEST_DIR,
+    'COMPONENT_TYPE' => 'lib-shared'
+  }
+
+  def self.build
+    system @env, 'make'
+  end
+
+  def self.install
+    system @env, 'make install'
+  end
+end

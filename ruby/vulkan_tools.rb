@@ -1,0 +1,72 @@
+# Adapted from Arch Linux vulkan-tools PKGBUILD at:
+# https://github.com/archlinux/svntogit-packages/raw/packages/vulkan-tools/trunk/PKGBUILD
+
+require 'buildsystems/cmake'
+
+class Vulkan_tools < CMake
+  description 'Vulkan Utilities and Tools'
+  homepage 'https://github.com/KhronosGroup/Vulkan-Tools'
+  version '1.4.327'
+  license 'custom'
+  compatibility 'aarch64 armv7l x86_64'
+  source_url 'https://github.com/KhronosGroup/Vulkan-Tools.git'
+  git_hashtag "v#{version}"
+  binary_compression 'tar.zst'
+
+  binary_sha256({
+    aarch64: '39cf153fa5de884cbb3622ee0c95f5de997279b5ddc41a84ba191352876f35a7',
+     armv7l: '39cf153fa5de884cbb3622ee0c95f5de997279b5ddc41a84ba191352876f35a7',
+     x86_64: 'aa3995e74e97ceffd1a3ba0349d56f9645a4eb7badd9c83bf7f956502eb43ee0'
+  })
+
+  depends_on 'gcc_dev' => :build
+  depends_on 'gcc_lib' # R
+  depends_on 'glibc' # R
+  depends_on 'glslang' => :build
+  depends_on 'libx11' # R
+  depends_on 'libxcb' # R
+  depends_on 'libxrandr' => :build
+  depends_on 'python3' => :build
+  depends_on 'spirv_tools' => :build
+  depends_on 'vulkan_headers' => :build
+  depends_on 'wayland' # R
+  depends_on 'wayland_protocols' => :build
+
+  def self.build
+    system 'scripts/update_deps.py'
+    system "cmake -G Ninja -B builddir \
+        #{CREW_CMAKE_OPTIONS} \
+        -DVULKAN_HEADERS_INSTALL_DIR=#{CREW_PREFIX} \
+        -DCMAKE_INSTALL_SYSCONFDIR=#{CREW_PREFIX}/etc \
+        -DCMAKE_INSTALL_DATADIR=#{CREW_PREFIX}/share \
+        -DCMAKE_SKIP_RPATH=True \
+        -DBUILD_WSI_XCB_SUPPORT=On \
+        -DBUILD_WSI_XLIB_SUPPORT=On \
+        -DBUILD_WSI_WAYLAND_SUPPORT=On \
+        -DBUILD_CUBE=ON \
+        -DBUILD_VULKANINFO=ON \
+        -DBUILD_ICD=OFF \
+        -DUPDATE_DEPS=ON"
+    system "cmake -G Ninja -B builddir-wayland \
+        #{CREW_CMAKE_OPTIONS} \
+        -DVULKAN_HEADERS_INSTALL_DIR=#{CREW_PREFIX} \
+        -DCMAKE_INSTALL_SYSCONFDIR=#{CREW_PREFIX}/etc \
+        -DCMAKE_INSTALL_DATADIR=#{CREW_PREFIX}/share \
+        -DCMAKE_SKIP_RPATH=True \
+        -DBUILD_WSI_XCB_SUPPORT=OFF \
+        -DBUILD_WSI_XLIB_SUPPORT=OFF \
+        -DBUILD_WSI_WAYLAND_SUPPORT=On \
+        -DBUILD_CUBE=ON \
+        -DCUBE_WSI_SELECTION=WAYLAND \
+        -DBUILD_VULKANINFO=OFF \
+        -DBUILD_ICD=OFF \
+        -DUPDATE_DEPS=ON"
+    system "#{CREW_NINJA} -C builddir"
+    system "#{CREW_NINJA} -C builddir-wayland"
+  end
+
+  def self.install
+    system "DESTDIR=#{CREW_DEST_DIR} #{CREW_NINJA} -C builddir install"
+    FileUtils.install 'builddir-wayland/cube/vkcube', "#{CREW_DEST_PREFIX}/bin/vkcube-wayland", mode: 0o755
+  end
+end

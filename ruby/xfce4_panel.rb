@@ -1,0 +1,48 @@
+require 'package'
+
+class Xfce4_panel < Package
+  description 'Next generation panel for the XFCE desktop environment'
+  homepage 'https://xfce.org/'
+  version '4.16.3'
+  license 'GPL-2+ and LGPL-2.1+'
+  compatibility 'aarch64 armv7l x86_64'
+  source_url 'https://archive.xfce.org/src/xfce/xfce4-panel/4.16/xfce4-panel-4.16.3.tar.bz2'
+  source_sha256 '5934eaed8a76da52c29b734ccd79600255420333dd6ebd8fd9f066379af1e092'
+  binary_compression 'tar.xz'
+
+  binary_sha256({
+    aarch64: 'be479ecd57ca0a60f2ca69ea39f4a65d240dae52f72f36da7e7280dbe007768c',
+     armv7l: 'be479ecd57ca0a60f2ca69ea39f4a65d240dae52f72f36da7e7280dbe007768c',
+     x86_64: 'fb4ddea55c05ed590a0c0b5d6bf383197182af9be828f9324279f3d3c9c8d694'
+  })
+
+  depends_on 'libwnck'
+  depends_on 'libxfce4ui'
+  depends_on 'xfconf'
+  depends_on 'garcon'
+  depends_on 'exo'
+  depends_on 'gtk3'
+
+  def self.patch
+    system 'filefix'
+  end
+
+  def self.build
+    system <<~BUILD
+      [ -x autogen.sh ] && env NOCONFIGURE='1' ./autogen.sh
+      env #{CREW_ENV_OPTIONS} ./configure #{CREW_CONFIGURE_OPTIONS} \
+        --disable-static \
+        --enable-gio-unix
+
+      make
+    BUILD
+  end
+
+  def self.install
+    system 'make', "DESTDIR=#{CREW_DEST_DIR}", 'install'
+  end
+
+  def self.postinstall
+    system 'gtk-update-icon-cache', '-f', '-t', "#{CREW_PREFIX}/share/icons/hicolor"
+  end
+end

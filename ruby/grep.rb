@@ -1,0 +1,33 @@
+# Adapted from Arch Linux grep PKGBUILD at:
+# https://github.com/archlinux/svntogit-packages/raw/packages/grep/trunk/PKGBUILD
+
+require 'buildsystems/autotools'
+
+class Grep < Autotools
+  description 'A string search utility'
+  homepage 'https://www.gnu.org/software/grep/'
+  version '3.12'
+  license 'GPL-3+'
+  compatibility 'all'
+  source_url "https://ftp.gnu.org/gnu/grep/grep-#{version}.tar.xz"
+  source_sha256 '2649b27c0e90e632eadcd757be06c6e9a4f48d941de51e7c0f83ff76408a07b9'
+  binary_compression 'tar.zst'
+
+  binary_sha256({
+    aarch64: '0ea4b1df34494b73a6faef1a3df4f8f67d39ec9704d48ff5a3aa964444d9cef4',
+     armv7l: '0ea4b1df34494b73a6faef1a3df4f8f67d39ec9704d48ff5a3aa964444d9cef4',
+       i686: 'fec68b4cda61591f524d1ea7a2025f97d2b177006f013a26ebd3366e2e04f124',
+     x86_64: '81670d54d70bebb2d2d0ae78016603838cb86d28dc844916f8b3d72d994504a0'
+  })
+
+  depends_on 'glibc' => :executable_only
+  depends_on 'pcre2' => :executable_only
+
+  # NOTE: built on i686 by removing the c11threads derived threads.h
+  # installed by the chromebrew glibc package on this architecture.
+
+  autotools_configure_options 'CPPFLAGS=-DHAVE_DYNAMIC_LIBPCRE --without-included-regex'
+
+  # Section XFAIL test with grep: regexec.c:1344: pop_fail_stack: Assertion `num >= 0' failed.
+  # run_tests
+end

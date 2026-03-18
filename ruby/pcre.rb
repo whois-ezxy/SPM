@@ -1,0 +1,31 @@
+require 'buildsystems/autotools'
+
+class Pcre < Autotools
+  description 'The PCRE library is a set of functions that implement regular expression pattern matching using the same syntax and semantics as Perl 5.'
+  homepage 'http://pcre.org/'
+  version '8.45'
+  license 'BSD-3'
+  compatibility 'all'
+  source_url "https://sourceforge.net/projects/pcre/files/pcre/#{version}/pcre-#{version}.tar.bz2"
+  source_sha256 '4dae6fdcd2bb0bb6c37b5f97c33c2be954da743985369cddac3546e3218bffb8'
+  binary_compression 'tar.zst'
+
+  binary_sha256({
+    aarch64: '925da859f7c9b10946cdbd731549de593a7990a1d73f24dc683512d60aea4b2e',
+     armv7l: '925da859f7c9b10946cdbd731549de593a7990a1d73f24dc683512d60aea4b2e',
+       i686: 'dcc02d2beb02b9b6e901da65913be151e3d6c564ffa2e77ec3ccfe7bcf9539f0',
+     x86_64: 'ee4f6f40c9acfd64e9c93281d8a5a6b8ac1aab3da5f11c7bbf5bfddc2bedc2d3'
+  })
+
+  depends_on 'gcc_lib' # R
+  depends_on 'glibc' # R
+  depends_on 'readline' => :executable_only
+
+  autotools_configure_options '--enable-shared \
+      --with-pic \
+      --enable-unicode-properties \
+      --enable-pcre16 \
+      --enable-pcre32 \
+      --enable-jit \
+      --enable-pcretest-libreadline'
+end

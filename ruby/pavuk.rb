@@ -1,0 +1,28 @@
+require 'package'
+
+class Pavuk < Package
+  description 'Web spider and website mirroring tool.'
+  homepage 'http://www.pavuk.org/'
+  version '0.9.35'
+  license 'GPL-2'
+  compatibility 'all'
+  source_url "https://downloads.sourceforge.net/projects/pavuk/pavuk/#{version}/pavuk-#{version}.tar.gz"
+  source_sha256 'f9c64e511822c96a6714fa0bf336c1b0864767104c906e4393ab0fdf427815f6'
+  binary_compression 'tar.xz'
+
+  binary_sha256({
+    aarch64: 'fce68e7d12bf1092079c51eb2fe6f47264506dc826eb86ea378c09b262ea47ae',
+     armv7l: 'fce68e7d12bf1092079c51eb2fe6f47264506dc826eb86ea378c09b262ea47ae',
+       i686: '5f18e15b2b73e9b1aee5eb3fbf001eb0841545ced689e72bdd5985050486dd78',
+     x86_64: '9588693f44c76a06bd18534ab1c59259b1244298048ee0be8c1d87d60dead16b'
+  })
+
+  def self.build
+    system "./configure --prefix=#{CREW_PREFIX} --libdir=#{CREW_LIB_PREFIX}"
+    system 'make'
+  end
+
+  def self.install
+    system 'make', "DESTDIR=#{CREW_DEST_DIR}", 'install' # the steps required to install the package
+  end
+end
