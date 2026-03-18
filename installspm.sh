@@ -25,7 +25,7 @@ echo "[SPM] DB: $SPM_DB"
 # --- Create dirs ---
 sudo mkdir -p "$SPM_PKGS_ROOT" "$SPM_DB" /usr/local/bin
 
-# --- Fetch spm script from bin/spm in your repo ---
+# --- Fetch spm script from bin/spm
 SPM_URL="https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/${BRANCH}/bin/spm"
 
 echo "[SPM] Downloading spm from:"
