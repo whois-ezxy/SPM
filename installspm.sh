@@ -35,4 +35,4 @@ curl -fsSL "$SPM_URL" | sudo tee "$SPM_BIN" >/dev/null
 sudo chmod +x "$SPM_BIN"
 
 echo "[SPM] Installed /usr/local/bin/spm"
-echo "[SPM] You can now run: spm env   (once you add that subcommand)"
+echo "[SPM] SPM is fully set up, grab some packages"
